@@ -1,0 +1,61 @@
+package utils
+
+const (
+	SUCCESS = 200
+	ERROR   = 500
+	//code以100开头 用户模块错误
+	ERROR_USERNAME_USED      = 1001
+	ERROR_USERNAME_WRONG     = 1002
+	ERROR_PASSWORD_WRONG     = 1003
+	ERROR_TEL_WRONG          = 1004
+	ERROR_TEL_USED           = 1005
+	ERROR_CREAT_WRONG        = 1006
+	ERROR_USERNAME_NOT_EXIST = 1007
+	ERROR_EMAIL_WRONG        = 1008
+	ERROR_EMAIL_CHECK        = 1009
+	ERROR_EMAIL_NOT_EXIST    = 1010
+	ERROR_CHANGE_WRONG       = 1011
+	//code以200开头 音乐模块错误
+	ERROR_ADDLIKES_WRONG = 2001
+	ERROR_ADDCOLS_WRONG  = 2002
+	ERROR_DESLIKES_WRONG = 2003
+	ERROR_DESCOLS_WRONG  = 2004
+
+	ERROR_USERADDCOLS_WRONG   = 2005
+	ERROR_USERDESCOLS_WRONG   = 2006
+	ERROR_USERADDLIKES_WRONG  = 2007
+	ERROR_USERDESLIKES_WRONG  = 2008
+	ERROR_USERLIKESLIST_WRONG = 2009
+	ERROR_USERCOLSLIST_WRONG  = 2010
+)
+
+var codemsg = map[int]string{
+	SUCCESS:                  "OK",
+	ERROR:                    "FAIL",
+	ERROR_USERNAME_USED:      "用户名已存在",
+	ERROR_USERNAME_WRONG:     "用户名不符合",
+	ERROR_PASSWORD_WRONG:     "密码错误",
+	ERROR_TEL_WRONG:          "电话号码不符",
+	ERROR_TEL_USED:           "该邮箱已被注册",
+	ERROR_CREAT_WRONG:        "注册失败,请检查网络",
+	ERROR_USERNAME_NOT_EXIST: "该用户名不存在",
+	ERROR_EMAIL_WRONG:        "发送验证码错误",
+	ERROR_EMAIL_CHECK:        "验证码错误",
+	ERROR_EMAIL_NOT_EXIST:    "该邮箱未注册",
+	ERROR_CHANGE_WRONG:       "修改错误",
+
+	ERROR_ADDLIKES_WRONG:      "点赞错误",
+	ERROR_ADDCOLS_WRONG:       "收藏错误",
+	ERROR_DESLIKES_WRONG:      "取消点赞错误",
+	ERROR_DESCOLS_WRONG:       "取消收藏错误",
+	ERROR_USERADDCOLS_WRONG:   "用户收藏错误",
+	ERROR_USERDESCOLS_WRONG:   "用户取消收藏错误",
+	ERROR_USERADDLIKES_WRONG:  "用户点赞错误",
+	ERROR_USERDESLIKES_WRONG:  "用户取消点赞错误",
+	ERROR_USERLIKESLIST_WRONG: "获取用户点赞列表错误",
+	ERROR_USERCOLSLIST_WRONG:  "获取用户收藏列表错误",
+}
+
+func GetErrMsg(code int) string {
+	return codemsg[code]
+}
