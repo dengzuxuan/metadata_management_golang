@@ -1,24 +1,23 @@
+// 文章转自知乎: https://zhuanlan.zhihu.com/p/228881482
 package middleware
 
 import (
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"time"
+	"net/http"
 )
 
 func Cors() gin.HandlerFunc {
 	return func(context *gin.Context) {
-		cors.New(cors.Config{
-			//AllowAllOrigins: true, 和下边一个意思
-			AllowOrigins:  []string{"*"},
-			AllowMethods:  []string{"*"},
-			AllowHeaders:  []string{"Origin"},
-			ExposeHeaders: []string{"Content-Length", "Authorization"},
-			//AllowCredentials: true,//是否发送cookie请求 无需配置
-			//AllowOriginFunc: func(origin string) bool {
-			//	return origin == "https://github.com"
-			//}, //这行的意思是如果访问的是不允许跨域的话返回的是什么
-			MaxAge: 12 * time.Hour, //预请求保存时间 12个小时
-		})
+		method := context.Request.Method
+
+		context.Header("Access-Control-Allow-Origin", "*")
+		context.Header("Access-Control-Allow-Headers", "*")
+		context.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PATCH, PUT")
+		context.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Content-Type")
+		context.Header("Access-Control-Allow-Credentials", "true")
+
+		if method == "OPTIONS" {
+			context.AbortWithStatus(http.StatusNoContent)
+		}
 	}
 }

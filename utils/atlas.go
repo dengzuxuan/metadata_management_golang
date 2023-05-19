@@ -1,25 +1,92 @@
 package utils
 
 import (
-	"fmt"
-	"io"
+	"bytes"
+	"encoding/json"
+	"errors"
+	"io/ioutil"
+	"log"
 	"net/http"
 )
 
-func AtlasApi() {
-	// 构建请求
-	resp, err := http.Get("Error: connect ECONNREFUSED 127.0.0.1:10809")
-	if err != nil {
-		fmt.Println("Error sending request:", err)
-		return
-	}
-	defer resp.Body.Close()
+var (
+	baseUrl = "http://hadoop102:21000/api/"
+)
 
-	// 读取响应
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading response:", err)
-		return
+func Call(part, username, password, method string, queryParams map[string]string, body interface{}) ([]byte, error) {
+	url := baseUrl + part
+	req := &http.Request{}
+	client := &http.Client{}
+	switch method {
+	case "POST":
+		req, _ = post(url, body, queryParams, nil)
+	case "GET":
+		req, _ = get(url, queryParams, nil)
 	}
-	fmt.Println(string(body))
+	req.SetBasicAuth(username, password)
+	resp, _ := client.Do(req)
+	s, _ := ioutil.ReadAll(resp.Body)
+	return s, nil
+}
+
+func get(url string, params map[string]string, headers map[string]string) (*http.Request, error) {
+	//new request
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("new request is fail ")
+	}
+	//add params
+	q := req.URL.Query()
+	if params != nil {
+		for key, val := range params {
+			q.Add(key, val)
+		}
+		req.URL.RawQuery = q.Encode()
+	}
+	//add headers
+	if headers != nil {
+		for key, val := range headers {
+			req.Header.Add(key, val)
+		}
+	}
+	//http client
+	log.Printf("Go %s URL : %s \n", http.MethodGet, req.URL.String())
+	return req, nil
+}
+func post(url string, body interface{}, params map[string]string, headers map[string]string) (*http.Request, error) {
+	//add post body
+	var bodyJson []byte
+	var req *http.Request
+	if body != nil {
+		var err error
+		bodyJson, err = json.Marshal(body)
+		if err != nil {
+			log.Println(err)
+			return nil, errors.New("http post body to json failed")
+		}
+	}
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(bodyJson))
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("new request is fail: %v \n")
+	}
+	req.Header.Set("Content-type", "application/json")
+	//add params
+	q := req.URL.Query()
+	if params != nil {
+		for key, val := range params {
+			q.Add(key, val)
+		}
+		req.URL.RawQuery = q.Encode()
+	}
+	//add headers
+	if headers != nil {
+		for key, val := range headers {
+			req.Header.Add(key, val)
+		}
+	}
+	//http client
+	log.Printf("Go %s URL : %s \n", http.MethodPost, req.URL.String())
+	return req, nil
 }

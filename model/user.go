@@ -7,13 +7,39 @@ import (
 )
 
 type User struct {
-	Id         int    `gorm:"id"`
-	Username   string `gorm:"username"`
-	Password   string `gorm:"password"`
-	Role       int    `gorm:"role"`
-	Avatar     string `gorm:"avatar"`
-	Status     string `gorm:"status"`
-	Department string `gorm:"department"`
+	Id         int    `gorm:"id" json:"id"`
+	Username   string `gorm:"username" json:"username"`
+	Password   string `gorm:"password" json:"password"`
+	Role       int    `gorm:"role" json:"role"`
+	Avatar     string `gorm:"avatar" json:"avatar"`
+	Status     string `gorm:"status" json:"status"`
+	Department string `gorm:"department" json:"department"`
+	Background string `gorm:"background" json:"background"`
+	Telephone  string `gorm:"telephone" json:"telephone"`
+	Email      string `gorm:"email" json:"email"`
+	Address    string `gorm:"address" json:"address"`
+	Place      string `gorm:"place" json:"place"`
+	Statement  string `gorm:"statement" json:"statement"`
+	Male       string `gorm:"male" json:"male"`
+	RoleInfo   string `gorm:"-" json:"roleInfo"`
+}
+
+var roleMap = map[int]string{
+	0: "超级管理员",
+	1: "管理员",
+	2: "部门管理员",
+	3: "普通员工",
+}
+
+type LoginUser struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+type GuidModel struct {
+	Guid string `json:"guid"`
+}
+type AtlasSearchPre struct {
+	Query string `json:"query"`
 }
 
 func (this *User) TableName() string {
@@ -29,6 +55,22 @@ func AddUser(username string, password string, email string) int {
 		return utils.ERROR_CREAT_WRONG
 	}
 	return utils.SUCCESS
+}
+func GetUserAvatar(id int) string {
+	var user User
+	db.Select("avatar").Where("id = ?", id).First(&user)
+	return user.Avatar
+}
+func GetUserInfo(id int) (username string, avatar string) {
+	var user User
+	db.Where("id = ?", id).First(&user)
+	return user.Username, user.Avatar
+}
+func GetUserInfos(id int) User {
+	var user User
+	db.Where("id = ?", id).First(&user)
+	user.RoleInfo = roleMap[user.Role]
+	return user
 }
 
 //	func CheckAdd(username string, email string) (code int) {
