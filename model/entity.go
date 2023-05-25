@@ -23,7 +23,7 @@ func AddEntityType(typename string) int {
 	newEntity := EntityTypeInfo{
 		Typename:    typename,
 		Userid:      1,
-		Createtime:  time.Now().Add(-1 * time.Hour * 24 * 3).Format("2006-01-02 15:05:05"),
+		Createtime:  time.Now().Add(-1 * time.Hour * 24 * 3).Format("2006-01-02 15:04:05"),
 		Description: "",
 	}
 	err = db.Create(&newEntity).Error

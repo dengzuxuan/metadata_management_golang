@@ -37,6 +37,22 @@ type TermRespAtlas struct {
 		RelationGUID string `json:"relationGuid"`
 	} `json:"anchor"`
 }
+type AddTermReq struct {
+	Termname  string `json:"termname"`
+	Shortdesc string `json:"shortdesc"`
+	Longdesc  string `json:"longdesc"`
+}
+
+type AddTermInfo struct {
+	Name             string `json:"name"`
+	ShortDescription string `json:"shortDescription"`
+	LongDescription  string `json:"longDescription"`
+	Anchor           struct {
+		GlossaryGuid string `json:"glossaryGuid"`
+		DisplayText  string `json:"displayText"`
+	} `json:"anchor"`
+}
+
 type GlossaryInfo struct {
 	Id               int    `gorm:"id" json:"id"`
 	Glossaryname     string `gorm:"glossaryname" json:"glossaryname"`
@@ -48,6 +64,12 @@ type GlossaryInfo struct {
 	Termnumber       int    `gorm:"termnumber" json:"termnumber"`
 	Createtime       string `gorm:"createtime" json:"createtime"`
 	Guid             string `gorm:"guid" json:"guid"`
+
+	Updatetime   string `gorm:"updatetime" json:"updatetime"`
+	Updateuserid int    `gorm:"updateuserid" json:"updateuserid"`
+
+	UpdateUsername string `gorm:"-" json:"update_username"`
+	UpdateAvatar   string `gorm:"-" json:"update_avatar"`
 }
 
 type GlossaryTermsInfo struct {
@@ -63,6 +85,12 @@ type GlossaryTermsInfo struct {
 	Guid             string `gorm:"guid" json:"guid"`
 	Glossaryguid     string `gorm:"glossaryguid" json:"glossaryguid"`
 	Glossaryname     string `gorm:"glossaryname" json:"glossaryname"`
+
+	Updatetime   string `gorm:"updatetime" json:"updatetime"`
+	Updateuserid int    `gorm:"updateuserid" json:"updateuserid"`
+
+	UpdateUsername string `gorm:"-" json:"update_username"`
+	UpdateAvatar   string `gorm:"-" json:"update_avatar"`
 }
 type GlossaryTermClassificationAttributeInfo struct {
 	Id                 int    `gorm:"id" json:"id"`
@@ -94,7 +122,7 @@ func AddGlossary(Glossaryname string, Shortdescription string, Longdescription s
 		Username:         username,
 		Avatar:           avatar,
 		Termnumber:       Termnumber,
-		Createtime:       time.Now().Format("2006-01-02 15:05:05"),
+		Createtime:       time.Now().Format("2006-01-02 15:04:05"),
 		Guid:             guid,
 	}
 	err = db.Create(&newGlossary).Error
@@ -114,20 +142,51 @@ func GetTermTotalName(guid string) string {
 	totalName := term.Termname + "@" + term.Glossaryname
 	return totalName
 }
+func GetTermTotalName2(termname string) string {
+	term := GlossaryTermsInfo{}
+	_ = db.Where("termname=?", termname).Find(&term)
+	totalName := term.Termname + "@" + term.Glossaryname
+	return totalName
+}
 func GetGlossary(guid string) GlossaryInfo {
 	glossary := GlossaryInfo{}
 	_ = db.Where("guid=?", guid).Find(&glossary)
 	username, avatar := GetUserInfo(glossary.Userid)
+	upusername, upavatar := GetUserInfo(glossary.Updateuserid)
 	glossary.Username = username
 	glossary.Avatar = avatar
+	glossary.UpdateUsername = upusername
+	glossary.UpdateAvatar = upavatar
+	return glossary
+}
+func UpdateGlossary(name string, longdesc string, shortdesc string, userid int) {
+	glossaryInfo := GlossaryInfo{}
+	_ = db.Model(&glossaryInfo).Where("glossaryname=?", name).Update("shortdescription", shortdesc)
+	_ = db.Model(&glossaryInfo).Where("glossaryname=?", name).Update("longdescription", longdesc)
+	_ = db.Model(&glossaryInfo).Where("glossaryname=?", name).Update("updateuserid", userid)
+	_ = db.Model(&glossaryInfo).Where("glossaryname=?", name).Update("updatetime", time.Now().Format("2006-01-02 15:04:05"))
+}
+func UpdateTerm(glossaryname string, termname string, longdesc string, shortdesc string, userid int) {
+	termInfo := GlossaryTermsInfo{}
+	_ = db.Model(&termInfo).Where("glossaryname=?", glossaryname).Where("termname=?", termname).Update("shortdescription", shortdesc)
+	_ = db.Model(&termInfo).Where("glossaryname=?", glossaryname).Where("termname=?", termname).Update("longdescription", longdesc)
+	_ = db.Model(&termInfo).Where("glossaryname=?", glossaryname).Where("termname=?", termname).Update("updateuserid", userid)
+	_ = db.Model(&termInfo).Where("glossaryname=?", glossaryname).Where("termname=?", termname).Update("updatetime", time.Now().Format("2006-01-02 15:04:05"))
+}
+func GetGlossaryInfo(glossaryName string) GlossaryInfo {
+	glossary := GlossaryInfo{}
+	_ = db.Where("glossaryname=?", glossaryName).Find(&glossary)
 	return glossary
 }
 func GetTermInfo(termName string, glossaryName string) GlossaryTermsInfo {
 	termInfo := GlossaryTermsInfo{}
 	_ = db.Where("Termname=?", termName).Where("Glossaryname=?", glossaryName).Find(&termInfo)
 	username, avatar := GetUserInfo(termInfo.Userid)
+	upusername, upavatar := GetUserInfo(termInfo.Updateuserid)
 	termInfo.Username = username
 	termInfo.Avatar = avatar
+	termInfo.UpdateUsername = upusername
+	termInfo.UpdateAvatar = upavatar
 	return termInfo
 }
 func GetTerms(guid string) []GlossaryTermsInfo {
@@ -156,7 +215,7 @@ func AddTerm(Termname string, Glossaryname string, Shortdescription string, Long
 	newTerm := GlossaryTermsInfo{
 		Termname:         Termname,
 		Userid:           userid,
-		Createtime:       time.Now().Format("2006-01-02 15:05:05"),
+		Createtime:       time.Now().Format("2006-01-02 15:04:05"),
 		Shortdescription: Shortdescription,
 		Longdescription:  Longdescription,
 		Guid:             guid,

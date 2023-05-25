@@ -50,6 +50,7 @@ func SearchResult(c *gin.Context) {
 	_ = json.Unmarshal(lineageJson, &lineage)
 	entity["lineageSite"] = infos
 	entity["lineage"] = lineage
+	entity["businessmetadata"] = model.GetEntityBusinessInfos(guid)
 	classifications := make(map[string]interface{})
 	classificationsJson, _ := utils.Call("atlas/v2/entity/guid/"+guid+"/classifications", username, password, "GET", nil, nil)
 	_ = json.Unmarshal(classificationsJson, &classifications)
@@ -296,6 +297,7 @@ func FindTypeDetails(c *gin.Context) {
 	}
 
 	typeDetailsMap := make(map[string]interface{})
+	typeDetailJson := []byte{}
 	switch find {
 	case "entity":
 		body["typeName"] = typeName
@@ -303,16 +305,32 @@ func FindTypeDetails(c *gin.Context) {
 		body["termName"] = nil
 		info := model.GetEntityType(typeName)
 		typeDetailsMap["info"] = info
-		typeDetails, _ := utils.Call("atlas/v2/search/basic", username, password, "POST", nil, body)
-		_ = json.Unmarshal(typeDetails, &typeDetailsMap)
+		typeDetailJson, _ = utils.Call("atlas/v2/search/basic", username, password, "POST", nil, body)
+		_ = json.Unmarshal(typeDetailJson, &typeDetailsMap)
+		if typeDetailsMap["entities"] != nil {
+			for _, entityInfo := range typeDetailsMap["entities"].([]interface{}) {
+				entityInfoMap := entityInfo.(map[string]interface{})
+				guid := entityInfoMap["guid"]
+				businessInfo := model.GetEntityBusinessInfos(guid.(string))
+				entityInfoMap["businessInfo"] = businessInfo
+			}
+		}
 	case "classification":
 		body["classification"] = typeName
 		body["typeName"] = nil
 		body["termName"] = nil
 		info := model.GetClassificatioInfo(typeName)
 		typeDetailsMap["info"] = info
-		typeDetails, _ := utils.Call("atlas/v2/search/basic", username, password, "POST", nil, body)
-		_ = json.Unmarshal(typeDetails, &typeDetailsMap)
+		typeDetailJson, _ = utils.Call("atlas/v2/search/basic", username, password, "POST", nil, body)
+		_ = json.Unmarshal(typeDetailJson, &typeDetailsMap)
+		if typeDetailsMap["entities"] != nil {
+			for _, entityInfo := range typeDetailsMap["entities"].([]interface{}) {
+				entityInfoMap := entityInfo.(map[string]interface{})
+				guid := entityInfoMap["guid"]
+				businessInfo := model.GetEntityBusinessInfos(guid.(string))
+				entityInfoMap["businessInfo"] = businessInfo
+			}
+		}
 	case "term":
 		body["termName"] = typeName
 		body["typeName"] = nil
@@ -323,12 +341,284 @@ func FindTypeDetails(c *gin.Context) {
 			info := model.GetTermInfo(termName, glossaryName)
 			typeDetailsMap["info"] = info
 		}
-		typeDetails, _ := utils.Call("atlas/v2/search/basic", username, password, "POST", nil, body)
-		_ = json.Unmarshal(typeDetails, &typeDetailsMap)
+		typeDetailJson, _ = utils.Call("atlas/v2/search/basic", username, password, "POST", nil, body)
+		_ = json.Unmarshal(typeDetailJson, &typeDetailsMap)
+		if typeDetailsMap["entities"] != nil {
+			for _, entityInfo := range typeDetailsMap["entities"].([]interface{}) {
+				entityInfoMap := entityInfo.(map[string]interface{})
+				guid := entityInfoMap["guid"]
+				businessInfo := model.GetEntityBusinessInfos(guid.(string))
+				entityInfoMap["businessInfo"] = businessInfo
+			}
+		}
 	case "glossary":
 		typeDetailsMap = GetGlossaryInfo2(typeName)
+	case "business":
+		pageLimitInt, _ := strconv.Atoi(pageLimit)
+		pageOffsetInt, _ := strconv.Atoi(pageOffset)
+		typeDetailsMap = GetBusinessNameInfos(username, password, typeName, pageLimitInt, pageOffsetInt)
+
+		info := model.GetBusinessInfo(typeName)
+		typeDetailsMap["info"] = info
+		if typeDetailsMap["entities"] != nil {
+			for _, entityInfoMap := range typeDetailsMap["entities"].([]map[string]interface{}) {
+				//entityInfoMap := entityInfo.(map[string]interface{})
+				guid := entityInfoMap["guid"]
+				businessInfo := model.GetEntityBusinessInfos(guid.(string))
+				entityInfoMap["businessInfo"] = businessInfo
+			}
+		}
 	}
 	typeDetailsMap["status"] = utils.SUCCESS
 	typeDetailsMap["message"] = utils.GetErrMsg(utils.SUCCESS)
 	c.JSON(http.StatusOK, typeDetailsMap)
+}
+
+func UpdateTitleInfo(c *gin.Context) {
+
+	userid := c.GetHeader("user_id")
+	useridInt, _ := strconv.Atoi(userid)
+	typeInfo := c.Query("type")
+	updateInfo := c.Query("content")
+	fmt.Println(updateInfo)
+	//username := c.GetHeader("username")
+	switch typeInfo {
+	case "entity":
+
+	case "classification":
+		classificationUpdate := model.ClassificationInfoType{}
+		json.Unmarshal([]byte(updateInfo), &classificationUpdate)
+		classificationOri := model.GetClassificatioInfo(classificationUpdate.Classificationname)
+		if classificationOri.Description != classificationUpdate.Description {
+			model.AddTypeRecord(useridInt, "Update Classification Description", updateInfo)
+			model.UpdateClassification(classificationOri.Classificationname, classificationUpdate.Description, useridInt)
+		}
+	case "business":
+		businessUpdate := model.BusinessMetaInfoType{}
+		json.Unmarshal([]byte(updateInfo), &businessUpdate)
+		businessOri := model.GetBusinessInfo(businessUpdate.Businessname)
+		if businessUpdate.Description != businessOri.Description {
+			model.AddTypeRecord(useridInt, "Update Business Metadata Description", updateInfo)
+			model.UpdateBusinessInfo(businessOri.Businessname, businessUpdate.Description, useridInt)
+		}
+	case "glossary":
+		glossaryUpdate := model.GlossaryInfo{}
+		json.Unmarshal([]byte(updateInfo), &glossaryUpdate)
+		glossaryOri := model.GetGlossaryInfo(glossaryUpdate.Glossaryname)
+		if glossaryOri.Shortdescription != glossaryUpdate.Shortdescription || glossaryOri.Longdescription != glossaryUpdate.Longdescription {
+			model.AddTypeRecord(useridInt, "Update Glossary Description", updateInfo)
+			model.UpdateGlossary(glossaryOri.Glossaryname, glossaryUpdate.Longdescription, glossaryUpdate.Shortdescription, useridInt)
+		}
+	case "term":
+		termUpdate := model.GlossaryTermsInfo{}
+		json.Unmarshal([]byte(updateInfo), &termUpdate)
+		termOri := model.GetTermInfo(termUpdate.Termname, termUpdate.Glossaryname)
+		if termOri.Shortdescription != termUpdate.Shortdescription || termOri.Longdescription != termUpdate.Longdescription {
+			model.AddTypeRecord(useridInt, "Update Term Description", updateInfo)
+			model.UpdateTerm(termOri.Glossaryname, termOri.Termname, termUpdate.Longdescription, termUpdate.Shortdescription, useridInt)
+		}
+	}
+	resMap := map[string]interface{}{
+		"status":  utils.SUCCESS,
+		"message": utils.GetErrMsg(utils.SUCCESS),
+	}
+	c.JSON(http.StatusOK, resMap)
+}
+
+func AddInfos(c *gin.Context) {
+	username := c.GetHeader("username")
+	password := c.GetHeader("password")
+	userid := c.GetHeader("user_id")
+	useridInt, _ := strconv.Atoi(userid)
+	typeInfo := c.Query("type")
+	typeName := c.Query("typename")
+	content := c.Query("content")
+	switch typeInfo {
+	case "glossary":
+		guid := model.GetGlossaryGuid(typeName)
+		termInfoReq := model.AddTermReq{}
+		json.Unmarshal([]byte(content), &termInfoReq)
+		termInfoAtlasReq := model.AddTermInfo{
+			Name:             termInfoReq.Termname,
+			ShortDescription: termInfoReq.Shortdesc,
+			LongDescription:  termInfoReq.Longdesc,
+			Anchor: struct {
+				GlossaryGuid string `json:"glossaryGuid"`
+				DisplayText  string `json:"displayText"`
+			}{guid, typeName},
+		}
+		//http://hadoop102:21000/api/atlas/v2/glossary/term
+		addAtlasTerm, _ := utils.Call("atlas/v2/glossary/term", username, password, "POST", nil, termInfoAtlasReq)
+		addAtlasTermResp := make(map[string]interface{})
+		_ = json.Unmarshal(addAtlasTerm, &addAtlasTermResp)
+
+		//mysql
+		var termRespAtlas model.TermRespAtlas
+		var glossaryName string
+		_ = json.Unmarshal(addAtlasTerm, &termRespAtlas)
+		if strings.Contains(termRespAtlas.QualifiedName, "@") {
+			glossaryName = strings.Split(termRespAtlas.QualifiedName, "@")[1]
+		}
+		model.AddTerm(termRespAtlas.Name, glossaryName, termRespAtlas.ShortDescription, termRespAtlas.LongDescription, useridInt, termRespAtlas.GUID, guid)
+
+		model.AddTypeRecord(useridInt, "Add Term", content)
+		addTermResp := make(map[string]interface{})
+		addTermResp["status"] = utils.SUCCESS
+		addTermResp["message"] = utils.GetErrMsg(utils.SUCCESS)
+		c.JSON(http.StatusOK, addTermResp)
+
+	case "classification":
+		attributeInfoReq := model.AddClassificationReq{}
+		_ = json.Unmarshal([]byte(content), &attributeInfoReq)
+		addAttributeAtlasReq := model.GetAddAttributesAtlasReq(attributeInfoReq, username, typeName)
+		//http://hadoop102:21000/api/atlas/v2/types/typedefs?type=classification
+		addAtlasAttr, _ := utils.Call("atlas/v2/types/typedefs", username, password, "PUT", map[string]string{"type": "classification"}, addAttributeAtlasReq)
+		addAtlasAttrResp := make(map[string]interface{})
+		_ = json.Unmarshal(addAtlasAttr, &addAtlasAttrResp)
+		//mysql
+		//1.更新classification version
+		//2.更新attribute info
+		var classificationRespAtlas model.ClassificationRespAtlas
+		_ = json.Unmarshal(addAtlasAttr, &classificationRespAtlas)
+		if len(classificationRespAtlas.ClassificationDefs) != 0 {
+			for _, classification := range classificationRespAtlas.ClassificationDefs {
+				model.UpdateClassificationVersion(classification.Name, useridInt, classificationRespAtlas.ClassificationDefs[0].Version)
+			}
+		}
+		for _, attribute := range attributeInfoReq {
+			model.AddClassificationAttribute(typeName, attribute.Name, useridInt, attribute.Description, classificationRespAtlas.ClassificationDefs[0].GUID)
+		}
+
+		model.AddTypeRecord(useridInt, "Add Classification Attribute", content)
+
+	case "business":
+		attributeInfoReq := model.BusinessAttributeAdd{}
+		_ = json.Unmarshal([]byte(content), &attributeInfoReq)
+		attributeInfoAtlasReq := model.GetAddBusinessAttributesAtlasReq(attributeInfoReq, username, typeName)
+		addAtlasAttr, _ := utils.Call("atlas/v2/types/typedefs", username, password, "PUT", map[string]string{"type": "business_metadata"}, attributeInfoAtlasReq)
+		//addAtlasAttrResp := make(map[string]interface{})
+		//mysql
+		var businessRespAtlas model.BMRespAtlas
+		_ = json.Unmarshal(addAtlasAttr, &businessRespAtlas)
+		if len(businessRespAtlas.BusinessMetadataDefs) != 0 {
+			for _, business := range businessRespAtlas.BusinessMetadataDefs {
+				model.UpdateBusinessVersion(business.Name, useridInt, business.Version)
+			}
+		}
+		for _, attributeInfo := range attributeInfoReq {
+			model.AddBusinessAttributeInfo(typeName, attributeInfo.Name, username, attributeInfo.Weight, attributeInfo.Desc, businessRespAtlas.BusinessMetadataDefs[0].GUID)
+			for _, typename := range attributeInfo.Types {
+				model.AddBusinessAttributeTypeInfo(typename, typeName, attributeInfo.Name, username, businessRespAtlas.BusinessMetadataDefs[0].GUID)
+			}
+		}
+
+		model.AddTypeRecord(useridInt, "Add Business Metadata Attribute", content)
+	}
+
+	c.JSON(http.StatusOK, map[string]interface{}{
+		"status":  utils.SUCCESS,
+		"message": utils.GetErrMsg(utils.SUCCESS),
+	})
+}
+
+func UpdateAttrInfo(c *gin.Context) {
+	username := c.GetHeader("username")
+	password := c.GetHeader("password")
+	userid := c.GetHeader("user_id")
+	useridInt, _ := strconv.Atoi(userid)
+	typeInfo := c.Query("type")
+	typeName := c.Query("typename")
+	content := c.Query("content")
+	switch typeInfo {
+	case "classification":
+		attribute := model.ClassificationAttributeUpdateInfo{}
+		_ = json.Unmarshal([]byte(content), &attribute)
+		ori := model.GetAttributeInfo(attribute.Classificationname, attribute.Attributename)
+		if ori.Description != attribute.Description {
+			model.UpdateAttribute(ori.Classificationname, attribute.Attributename, attribute.Description, useridInt)
+			model.AddTypeRecord(useridInt, "Update Attribute Info Description", content)
+		}
+	case "business":
+		attribute := model.BusinessAttributeUpdate{}
+		_ = json.Unmarshal([]byte(content), &attribute)
+		oriAttribute := model.GetAttributeInfoWithTypes(typeName, attribute.Attributename)
+		if len(attribute.Types) < len(oriAttribute.Types) {
+			c.JSON(http.StatusOK, map[string]interface{}{
+				"status":  utils.ERROR_WRONG_CHANGE,
+				"message": utils.GetErrMsg(utils.ERROR_WRONG_CHANGE),
+			})
+			return
+		}
+		for _, oriType := range oriAttribute.Types {
+			flag := false
+			for _, newType := range attribute.Types {
+				if newType != oriType {
+					continue
+				} else {
+					flag = true
+					break
+				}
+			}
+			if flag == false {
+				c.JSON(http.StatusOK, map[string]interface{}{
+					"status":  utils.ERROR_WRONG_CHANGE,
+					"message": utils.GetErrMsg(utils.ERROR_WRONG_CHANGE),
+				})
+				return
+			}
+		}
+
+		if attribute.Weight == oriAttribute.Weight && len(attribute.Types) == len(oriAttribute.Types) {
+			if attribute.Description == oriAttribute.Description {
+				c.JSON(http.StatusOK, map[string]interface{}{
+					"status":  utils.SUCCESS,
+					"message": utils.GetErrMsg(utils.SUCCESS),
+				})
+				return
+			} else {
+				model.UpdateBusinessAttributeInfo(typeName, attribute.Attributename, useridInt, attribute.Weight, attribute.Description)
+				model.AddTypeRecord(useridInt, "Update Business Metadata Attribute Description", content)
+				c.JSON(http.StatusOK, map[string]interface{}{
+					"status":  utils.SUCCESS,
+					"message": utils.GetErrMsg(utils.SUCCESS),
+				})
+				return
+			}
+		}
+		//atlas
+		attributeInfoReq := model.BusinessAttributeAdd{}
+		attributeInfoReq = append(attributeInfoReq, model.BusinessAttribueAddItem{
+			ID:     0,
+			Weight: attribute.Weight,
+			Types:  attribute.Types,
+			Name:   attribute.Attributename,
+			Desc:   attribute.Description,
+		})
+		attributeInfoAtlasReq := model.GetAddBusinessAttributesAtlasReq(attributeInfoReq, username, typeName)
+		addAtlasAttr, _ := utils.Call("atlas/v2/types/typedefs", username, password, "PUT", map[string]string{"type": "business_metadata"}, attributeInfoAtlasReq)
+		var businessRespAtlas model.BMRespAtlas
+		fmt.Println(string(addAtlasAttr))
+		_ = json.Unmarshal(addAtlasAttr, &businessRespAtlas)
+		//mysql
+		if len(businessRespAtlas.BusinessMetadataDefs) != 0 {
+			for _, business := range businessRespAtlas.BusinessMetadataDefs {
+				model.UpdateBusinessVersion(business.Name, useridInt, business.Version)
+			}
+		}
+		for _, attributeInfo := range attributeInfoReq {
+			model.UpdateBusinessAttributeInfo(typeName, attributeInfo.Name, useridInt, attributeInfo.Weight, attributeInfo.Desc)
+			model.UpdateBusinessAttributeTypes(typeName, attributeInfo.Name, attributeInfo.Types, useridInt, businessRespAtlas.BusinessMetadataDefs[0].GUID)
+		}
+		if attribute.Weight != oriAttribute.Weight {
+			model.AddTypeRecord(useridInt, "Update Business Metadata Attribute Weight", content)
+		}
+		if len(attribute.Types) != len(oriAttribute.Types) {
+			model.AddTypeRecord(useridInt, "Update Business Metadata Attribute Types", content)
+		}
+
+	}
+	c.JSON(http.StatusOK, map[string]interface{}{
+		"status":  utils.SUCCESS,
+		"message": utils.GetErrMsg(utils.SUCCESS),
+	})
 }

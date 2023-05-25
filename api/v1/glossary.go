@@ -39,8 +39,28 @@ func AddTermInfo(c *gin.Context) {
 	password := c.GetHeader("password")
 	userid := c.GetHeader("user_id")
 	useridInt, _ := strconv.Atoi(userid)
+	/*
+		shortdesc := c.Query("shortdesc")
+			longdesc := c.Query("longdesc")
+			termName := c.Query("termname")
+			glossaryNameText := c.Query("glossaryname")
+			glossaryGuid := model.GetGlossaryGuid(glossaryNameText)
+			termReq := model.TermReqAtlas{
+				Name:             termName,
+				ShortDescription: shortdesc,
+				LongDescription:  longdesc,
+				Anchor: struct {
+					GlossaryGUID string `json:"glossaryGuid"`
+					DisplayText  string `json:"displayText"`
+				}(struct {
+					GlossaryGUID string
+					DisplayText  string
+				}{GlossaryGUID: glossaryGuid, DisplayText: glossaryNameText}),
+			}*/
 	var termReq model.TermReqAtlas
 	_ = c.ShouldBindJSON(&termReq)
+	guid := model.GetGlossaryGuid(termReq.Anchor.DisplayText)
+	termReq.Anchor.GlossaryGUID = guid
 	//atlas
 	addAtlasTerm, _ := utils.Call("atlas/v2/glossary/term", username, password, "POST", nil, termReq)
 	addAtlasTermResp := make(map[string]interface{})
@@ -129,6 +149,15 @@ func GetTermTotalName(c *gin.Context) {
 	guid := c.Query("guid")
 	termMap := make(map[string]interface{})
 	termName := model.GetTermTotalName(guid)
+	termMap["termName"] = termName
+	termMap["status"] = utils.SUCCESS
+	termMap["message"] = utils.GetErrMsg(utils.SUCCESS)
+	c.JSON(http.StatusOK, termMap)
+}
+func GetTermTotalName2(c *gin.Context) {
+	termname := c.Query("termname")
+	termMap := make(map[string]interface{})
+	termName := model.GetTermTotalName2(termname)
 	termMap["termName"] = termName
 	termMap["status"] = utils.SUCCESS
 	termMap["message"] = utils.GetErrMsg(utils.SUCCESS)

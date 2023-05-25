@@ -23,6 +23,41 @@ type User struct {
 	Male       string `gorm:"male" json:"male"`
 	RoleInfo   string `gorm:"-" json:"roleInfo"`
 }
+type UserShow struct {
+	Id         int    `gorm:"id" json:"id"`
+	Username   string `gorm:"username" json:"username"`
+	Role       int    `gorm:"role" json:"role"`
+	Avatar     string `gorm:"avatar" json:"avatar"`
+	Status     string `gorm:"status" json:"status"`
+	Department string `gorm:"department" json:"department"`
+	Background string `gorm:"background" json:"background"`
+	Telephone  string `gorm:"telephone" json:"telephone"`
+	Email      string `gorm:"email" json:"email"`
+	Address    string `gorm:"address" json:"address"`
+	Place      string `gorm:"place" json:"place"`
+	Statement  string `gorm:"statement" json:"statement"`
+	Male       string `gorm:"male" json:"male"`
+	RoleInfo   string `gorm:"-" json:"roleInfo"`
+}
+type UpdateUserInfo struct {
+	ID         int    `json:"id"`
+	Username   string `json:"username"`
+	Password   string `json:"password"`
+	Role       int    `json:"role"`
+	Avatar     string `json:"avatar"`
+	Status     string `json:"status"`
+	Department string `json:"department"`
+	Background string `json:"background"`
+	Telephone  string `json:"telephone"`
+	Email      string `json:"email"`
+	Address    string `json:"address"`
+	Place      string `json:"place"`
+	Statement  string `json:"statement"`
+	Male       string `json:"male"`
+	RoleInfo   string `json:"roleInfo"`
+	Newbg      string `json:"newbg"`
+	Newavatar  string `json:"newavatar"`
+}
 
 var roleMap = map[int]string{
 	0: "超级管理员",
@@ -71,6 +106,17 @@ func GetUserInfos(id int) User {
 	db.Where("id = ?", id).First(&user)
 	user.RoleInfo = roleMap[user.Role]
 	return user
+}
+func GetUserId(name string) int {
+	var user User
+	db.Where("username = ?", name).First(&user)
+	return user.Id
+}
+
+func GetUserRole(userid int) int {
+	var user User
+	db.Where("userid = ?", userid).First(&user)
+	return user.Role
 }
 
 //	func CheckAdd(username string, email string) (code int) {
@@ -130,7 +176,7 @@ func FindUser(id string) (int, User) {
 	}
 	return utils.SUCCESS, user
 }
-func UpdateUser(id string, user User) int {
+func UpdateUser(id int, user User) int {
 	err = db.Where("id = ?", id).Updates(user).Error
 	if err != nil {
 		return utils.ERROR_CHANGE_WRONG

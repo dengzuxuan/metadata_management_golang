@@ -9,6 +9,7 @@ import (
 	"others-part/utils"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -81,14 +82,21 @@ func GetSingleUser(c *gin.Context) {
 	userid := c.Query("userid")
 	userIdInt, _ := strconv.Atoi(userid)
 	user := model.GetUserInfos(userIdInt)
-	fmt.Println(user)
 	c.JSON(http.StatusOK, gin.H{
 		"user":    user,
 		"status":  utils.SUCCESS,
 		"message": utils.GetErrMsg(utils.SUCCESS),
 	})
 }
-
+func GetSingleUserId(c *gin.Context) {
+	username := c.Query("username")
+	user := model.GetUserId(username)
+	c.JSON(http.StatusOK, gin.H{
+		"user":    user,
+		"status":  utils.SUCCESS,
+		"message": utils.GetErrMsg(utils.SUCCESS),
+	})
+}
 func GetUserAudit(c *gin.Context) {
 	guids = []string{}
 	auidtTypes = auditTypes{}
@@ -127,6 +135,221 @@ func GetUserAudit(c *gin.Context) {
 	auditsMap["auditInfos"] = auidtTypes
 	auditsMap["num"] = len(auidtTypes)
 	c.JSON(http.StatusOK, auditsMap)
+}
+
+func GetUserCollect(c *gin.Context) {
+	CollectInfos := []model.CollectInfoType{}
+	username := c.GetHeader("username")
+	password := c.GetHeader("password")
+	userid := c.Query("userid")
+	useridInt, _ := strconv.Atoi(userid)
+	collects := model.GetCollect(useridInt)
+	for _, collect := range collects {
+		switch collect.Type {
+		case "entity":
+			entity := map[string]interface{}{}
+			//entity:=model.AtlasEntityInfo{}
+			entityJson, _ := utils.Call("atlas/v2/entity/guid/"+collect.Collectguid, username, password, "GET", nil, nil)
+			_ = json.Unmarshal(entityJson, &entity)
+			entityInfo := entity["entity"].(map[string]interface{})
+			createUserName := entityInfo["createdBy"].(string)
+			updateUserName := entityInfo["updatedBy"].(string)
+			createUserInfo := model.GetUserInfos(model.GetUserId(createUserName))
+			updateUserInfo := model.GetUserInfos(model.GetUserId(updateUserName))
+			CollectInfos = append(CollectInfos, model.CollectInfoType{
+				Id:               collect.Id,
+				Collectguid:      collect.Collectguid,
+				Createtime:       collect.Createtime,
+				EntityName:       collect.Collectname,
+				Typename:         "",
+				Type:             "entity",
+				Created:          entityInfo["createTime"].(float64),
+				Updated:          entityInfo["updateTime"].(float64),
+				CreateUserId:     createUserInfo.Id,
+				CreateUserName:   createUserInfo.Username,
+				CreateUserAvatar: createUserInfo.Avatar,
+				CreateUserRole:   createUserInfo.RoleInfo,
+				UpdateUserId:     updateUserInfo.Id,
+				UpdateUserName:   updateUserInfo.Username,
+				UpdateUserAvatar: updateUserInfo.Avatar,
+				UpdateUserRole:   updateUserInfo.RoleInfo,
+				Desc:             "暂无",
+			})
+		case "type":
+			typeName := collect.Typename
+			findName := collect.Findname
+			switch findName {
+			case "classification":
+				typeInfos := model.GetClassificatioInfo(typeName)
+				createUserInfo := model.GetUserInfos(model.GetUserId(typeInfos.Username))
+				updateUserInfo := model.GetUserInfos(model.GetUserId(typeInfos.UpdateUsername))
+				CollectInfos = append(CollectInfos, model.CollectInfoType{
+					Id:               collect.Id,
+					Collectguid:      collect.Collectguid,
+					Createtime:       collect.Createtime,
+					EntityName:       collect.Collectname,
+					Typename:         findName,
+					Type:             "type",
+					Created2:         utils.ChangeShowType(typeInfos.Createtime),
+					Updated2:         utils.ChangeShowType(typeInfos.Updatetime),
+					CreateUserId:     createUserInfo.Id,
+					CreateUserName:   createUserInfo.Username,
+					CreateUserAvatar: createUserInfo.Avatar,
+					CreateUserRole:   createUserInfo.RoleInfo,
+					UpdateUserId:     updateUserInfo.Id,
+					UpdateUserName:   updateUserInfo.Username,
+					UpdateUserAvatar: updateUserInfo.Avatar,
+					UpdateUserRole:   updateUserInfo.RoleInfo,
+					Desc:             typeInfos.Description,
+				})
+			case "term":
+				if strings.Contains(typeName, "@") {
+					termName, glossaryName := strings.Split(typeName, "@")[0], strings.Split(typeName, "@")[1]
+					typeInfos := model.GetTermInfo(termName, glossaryName)
+					createUserInfo := model.GetUserInfos(model.GetUserId(typeInfos.Username))
+					updateUserInfo := model.GetUserInfos(model.GetUserId(typeInfos.UpdateUsername))
+					CollectInfos = append(CollectInfos, model.CollectInfoType{
+						Id:               collect.Id,
+						Collectguid:      collect.Collectguid,
+						Createtime:       collect.Createtime,
+						EntityName:       collect.Collectname,
+						Typename:         findName,
+						Type:             "type",
+						Created2:         utils.ChangeShowType(typeInfos.Createtime),
+						Updated2:         utils.ChangeShowType(typeInfos.Updatetime),
+						CreateUserId:     createUserInfo.Id,
+						CreateUserName:   createUserInfo.Username,
+						CreateUserAvatar: createUserInfo.Avatar,
+						CreateUserRole:   createUserInfo.RoleInfo,
+						UpdateUserId:     updateUserInfo.Id,
+						UpdateUserName:   updateUserInfo.Username,
+						UpdateUserAvatar: updateUserInfo.Avatar,
+						UpdateUserRole:   updateUserInfo.RoleInfo,
+						Desc:             typeInfos.Longdescription,
+					})
+				}
+			case "glossary":
+				typeInfos := model.GetGlossaryInfo(typeName)
+				createUserInfo := model.GetUserInfos(model.GetUserId(typeInfos.Username))
+				updateUserInfo := model.GetUserInfos(model.GetUserId(typeInfos.UpdateUsername))
+				CollectInfos = append(CollectInfos, model.CollectInfoType{
+					Id:               collect.Id,
+					Collectguid:      collect.Collectguid,
+					Createtime:       collect.Createtime,
+					EntityName:       collect.Collectname,
+					Typename:         findName,
+					Type:             "type",
+					Created2:         utils.ChangeShowType(typeInfos.Createtime),
+					Updated2:         utils.ChangeShowType(typeInfos.Updatetime),
+					CreateUserId:     createUserInfo.Id,
+					CreateUserName:   createUserInfo.Username,
+					CreateUserAvatar: createUserInfo.Avatar,
+					CreateUserRole:   createUserInfo.RoleInfo,
+					UpdateUserId:     updateUserInfo.Id,
+					UpdateUserName:   updateUserInfo.Username,
+					UpdateUserAvatar: updateUserInfo.Avatar,
+					UpdateUserRole:   updateUserInfo.RoleInfo,
+					Desc:             typeInfos.Longdescription,
+				})
+			case "business":
+				typeInfos := model.GetClassificatioInfo(typeName)
+				createUserInfo := model.GetUserInfos(model.GetUserId(typeInfos.Username))
+				updateUserInfo := model.GetUserInfos(model.GetUserId(typeInfos.UpdateUsername))
+				CollectInfos = append(CollectInfos, model.CollectInfoType{
+					Id:               collect.Id,
+					Collectguid:      collect.Collectguid,
+					Createtime:       collect.Createtime,
+					EntityName:       collect.Collectname,
+					Typename:         findName,
+					Type:             "type",
+					Created2:         utils.ChangeShowType(typeInfos.Createtime),
+					Updated2:         utils.ChangeShowType(typeInfos.Updatetime),
+					CreateUserId:     createUserInfo.Id,
+					CreateUserName:   createUserInfo.Username,
+					CreateUserAvatar: createUserInfo.Avatar,
+					CreateUserRole:   createUserInfo.RoleInfo,
+					UpdateUserId:     updateUserInfo.Id,
+					UpdateUserName:   updateUserInfo.Username,
+					UpdateUserAvatar: updateUserInfo.Avatar,
+					UpdateUserRole:   updateUserInfo.RoleInfo,
+					Desc:             typeInfos.Description,
+				})
+			}
+		}
+	}
+	collectsMap := make(map[string]interface{})
+	collectsMap["collectInfos"] = CollectInfos
+	collectsMap["status"] = utils.SUCCESS
+	collectsMap["message"] = utils.GetErrMsg(utils.SUCCESS)
+	c.JSON(http.StatusOK, collectsMap)
+}
+
+func UploadAvatar(c *gin.Context) {
+	userid := c.GetHeader("user_id")
+	uploadType := c.GetHeader("upload_info")
+	file, err := c.FormFile("file") // 获取上传的文件
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  utils.ERROR_UPLOAD_WRONG,
+			"message": utils.GetErrMsg(utils.ERROR_UPLOAD_WRONG),
+		})
+		return
+	}
+	switch uploadType {
+	case "avatar":
+		err = utils.UploadOss("avatar/"+userid+"_"+file.Filename, file)
+	case "bg":
+		err = utils.UploadOss("bg/"+userid+"_"+file.Filename, file)
+	}
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  utils.ERROR_UPLOAD_WRONG,
+			"message": utils.GetErrMsg(utils.ERROR_UPLOAD_WRONG),
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"status":  utils.SUCCESS,
+		"message": utils.GetErrMsg(utils.SUCCESS),
+	})
+}
+
+func UpdateUserInfo(c *gin.Context) {
+	userid := c.GetHeader("user_id")
+	useridInt, _ := strconv.Atoi(userid)
+	userUpdateJson := c.Query("content")
+	userInfo := model.UpdateUserInfo{}
+	json.Unmarshal([]byte(userUpdateJson), &userInfo)
+	oriavatar := userInfo.Avatar
+	if len(userInfo.Newavatar) != 0 {
+		oriavatar = "http://metadata-manager.oss-cn-beijing.aliyuncs.com/avatar/" + userid + "_" + userInfo.Newavatar
+	}
+	oribg := userInfo.Background
+	if len(userInfo.Newbg) != 0 {
+		oribg = "http://metadata-manager.oss-cn-beijing.aliyuncs.com/bg/" + userid + "_" + userInfo.Newbg
+	}
+	updateUser := model.User{
+		Avatar:     oriavatar,
+		Department: userInfo.Department,
+		Background: oribg,
+		Telephone:  userInfo.Telephone,
+		Email:      userInfo.Email,
+		Address:    userInfo.Address,
+		Place:      userInfo.Place,
+		Statement:  userInfo.Statement,
+		Male:       userInfo.Male,
+	}
+	model.UpdateUser(useridInt, updateUser)
+	fmt.Println(userid, userUpdateJson)
+}
+
+func DeleteCollect(c *gin.Context) {
+	id := c.Query("id")
+	idInt, _ := strconv.Atoi(id)
+	model.DeleteCollect(idInt)
+	c.JSON(http.StatusOK, map[string]interface{}{
+		"status":  utils.SUCCESS,
+		"message": utils.GetErrMsg(utils.SUCCESS),
+	})
 }
 
 func getAllGuids(username, password, typeName string) {

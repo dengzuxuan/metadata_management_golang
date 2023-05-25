@@ -22,6 +22,10 @@ func Call(part, username, password, method string, queryParams map[string]string
 		req, _ = post(url, body, queryParams, nil)
 	case "GET":
 		req, _ = get(url, queryParams, nil)
+	case "PUT":
+		req, _ = put(url, body, queryParams, nil)
+	case "DELETE":
+		req, _ = del(url, body, queryParams, nil)
 	}
 	req.SetBasicAuth(username, password)
 	resp, _ := client.Do(req)
@@ -88,5 +92,66 @@ func post(url string, body interface{}, params map[string]string, headers map[st
 	}
 	//http client
 	log.Printf("Go %s URL : %s \n", http.MethodPost, req.URL.String())
+	return req, nil
+}
+func put(url string, body interface{}, params map[string]string, headers map[string]string) (*http.Request, error) {
+	//add put body
+	var bodyJson []byte
+	var req *http.Request
+	if body != nil {
+		var err error
+		bodyJson, err = json.Marshal(body)
+		if err != nil {
+			log.Println(err)
+			return nil, errors.New("http put body to json failed")
+		}
+	}
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(bodyJson))
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("new request is fail: %v \n")
+	}
+	req.Header.Set("Content-type", "application/json")
+	//add params
+	q := req.URL.Query()
+	if params != nil {
+		for key, val := range params {
+			q.Add(key, val)
+		}
+		req.URL.RawQuery = q.Encode()
+	}
+	//add headers
+	if headers != nil {
+		for key, val := range headers {
+			req.Header.Add(key, val)
+		}
+	}
+	//http client
+	log.Printf("Go %s URL : %s \n", http.MethodPost, req.URL.String())
+	return req, nil
+}
+func del(url string, body interface{}, params map[string]string, headers map[string]string) (*http.Request, error) {
+	//new request
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("new request is fail ")
+	}
+	//add params
+	q := req.URL.Query()
+	if params != nil {
+		for key, val := range params {
+			q.Add(key, val)
+		}
+		req.URL.RawQuery = q.Encode()
+	}
+	//add headers
+	if headers != nil {
+		for key, val := range headers {
+			req.Header.Add(key, val)
+		}
+	}
+	//http client
+	log.Printf("Go %s URL : %s \n", http.MethodGet, req.URL.String())
 	return req, nil
 }

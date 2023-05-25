@@ -15,7 +15,12 @@ func InitRouter() *gin.Engine {
 		user.POST("/login", v1.LoginUser)
 		user.GET("/info", v1.GetUser)
 		user.GET("/userinfo", v1.GetSingleUser)
+		user.GET("/getuserid", v1.GetSingleUserId)
 		user.GET("/useraudits", v1.GetUserAudit)
+		user.GET("/usercollect", v1.GetUserCollect)
+		user.POST("/deletecollect", v1.DeleteCollect)
+		user.POST("/uploadavatar", v1.UploadAvatar)
+		user.POST("/updateinfo", v1.UpdateUserInfo)
 	}
 	atlas := r.Group("/api/v1/atlas")
 	{
@@ -29,7 +34,9 @@ func InitRouter() *gin.Engine {
 		atlas.POST("/types/find", v1.FindTypeDetails)
 
 		atlas.GET("/nodedetails", v1.SearchNodeResult)
-
+		atlas.POST("/types/updatetitleinfo", v1.UpdateTitleInfo)
+		atlas.POST("/types/addinfo", v1.AddInfos)
+		atlas.POST("/types/updateattribute", v1.UpdateAttrInfo)
 		classification := atlas.Group("/classification")
 		{
 
@@ -38,6 +45,8 @@ func InitRouter() *gin.Engine {
 			classification.GET("/classificationattribute", v1.GetClassificationAttributeInfo)
 			classification.GET("/classificationname", v1.GetClassificationName)
 			classification.POST("/addclassification", v1.EntityAddClassification)
+			classification.POST("/updateclassification", v1.UpdateClassificatioInfo)
+			classification.POST("/deleteclassification", v1.DeleteClassification)
 		}
 		glossary := atlas.Group("/glossary")
 		{
@@ -46,6 +55,7 @@ func InitRouter() *gin.Engine {
 			glossary.POST("/createterm", v1.AddTermInfo)
 			glossary.GET("/glossaryinfos", v1.GetGlossaryInfo)
 			glossary.GET("/termname", v1.GetTermTotalName)
+			glossary.GET("/totalname", v1.GetTermTotalName2)
 		}
 		label := atlas.Group("/label")
 		{
@@ -56,11 +66,32 @@ func InitRouter() *gin.Engine {
 			userlabel.POST("/addlabel", v1.AddUserLabel)
 
 		}
+		businessMetadata := atlas.Group("/businessmeta")
+		{
+			businessMetadata.POST("/createbusinessmeta", v1.CreateBusinessInfo)
+			businessMetadata.GET("/getlists", v1.GetBusinessTypeInfos)
+			businessMetadata.GET("/bmlists", v1.GetGuidBusiness)
+			businessMetadata.GET("/getbusinessinfo", v1.GetBusinessInfos)
+			businessMetadata.POST("/addbusinessmeta", v1.AddBusinessInfo)
+		}
 	}
 	comment := r.Group("/api/v1/comment")
 	{
 		comment.GET("/allcoments", v1.GetAllComments)
 		comment.POST("/addcomment", v1.AddComment)
+	}
+	collect := r.Group("/api/v1/collect")
+	{
+		collect.POST("/addcollect", v1.AddCollect)
+		collect.POST("/deletesinglecollect", v1.DeleteSingleCollect)
+		collect.GET("/checkcollected", v1.CheckCollect)
+	}
+	follow := r.Group("/api/v1/follow")
+	{
+		follow.POST("/addfollow", v1.AddFollow)
+		follow.POST("/deletefollow", v1.DelFollow)
+		follow.GET("/checkfollow", v1.CheckFollow)
+		follow.GET("/getfollowinfo", v1.GetAllFollow)
 	}
 	return r
 }

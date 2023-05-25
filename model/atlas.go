@@ -87,6 +87,22 @@ type AtlasAudit []struct {
 	Entity    interface{} `json:"entity"`
 	Type      interface{} `json:"type"`
 }
+type AtlasEntityInfo struct {
+	Entity struct {
+		TypeName   string `json:"typeName"`
+		Attributes struct {
+			Owner        interface{} `json:"owner"`
+			GUID         string      `json:"guid"`
+			IsIncomplete bool        `json:"isIncomplete"`
+			Status       string      `json:"status"`
+			CreatedBy    string      `json:"createdBy"`
+			UpdatedBy    string      `json:"updatedBy"`
+			CreateTime   int64       `json:"createTime"`
+			UpdateTime   int64       `json:"updateTime"`
+			Version      int         `json:"version"`
+		}
+	}
+}
 type AtlasClassification struct {
 	EnumDefs           []interface{} `json:"enumDefs"`
 	StructDefs         []interface{} `json:"structDefs"`
@@ -141,6 +157,7 @@ type AtlasBusinessMeta struct {
 		TypeVersion   string `json:"typeVersion"`
 		AttributeDefs []struct {
 			Name                  string `json:"name"`
+			Desc                  string `json:"desc"`
 			TypeName              string `json:"typeName"`
 			IsOptional            bool   `json:"isOptional"`
 			Cardinality           string `json:"cardinality"`

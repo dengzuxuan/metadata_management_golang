@@ -15,6 +15,7 @@ const (
 	ERROR_EMAIL_CHECK        = 1009
 	ERROR_EMAIL_NOT_EXIST    = 1010
 	ERROR_CHANGE_WRONG       = 1011
+	ERROR_UPLOAD_WRONG       = 1012
 	//code以200开头 音乐模块错误
 	ERROR_ADDLIKES_WRONG = 2001
 	ERROR_ADDCOLS_WRONG  = 2002
@@ -27,6 +28,10 @@ const (
 	ERROR_USERDESLIKES_WRONG  = 2008
 	ERROR_USERLIKESLIST_WRONG = 2009
 	ERROR_USERCOLSLIST_WRONG  = 2010
+	//code以400开头 权限错误
+	ERROR_USER_AUTH_NOT_ENOUGH = 4001
+
+	ERROR_WRONG_CHANGE = 4002
 )
 
 var codemsg = map[int]string{
@@ -43,6 +48,7 @@ var codemsg = map[int]string{
 	ERROR_EMAIL_CHECK:        "验证码错误",
 	ERROR_EMAIL_NOT_EXIST:    "该邮箱未注册",
 	ERROR_CHANGE_WRONG:       "修改错误",
+	ERROR_UPLOAD_WRONG:       "上传失败",
 
 	ERROR_ADDLIKES_WRONG:      "点赞错误",
 	ERROR_ADDCOLS_WRONG:       "收藏错误",
@@ -54,6 +60,10 @@ var codemsg = map[int]string{
 	ERROR_USERDESLIKES_WRONG:  "用户取消点赞错误",
 	ERROR_USERLIKESLIST_WRONG: "获取用户点赞列表错误",
 	ERROR_USERCOLSLIST_WRONG:  "获取用户收藏列表错误",
+
+	ERROR_USER_AUTH_NOT_ENOUGH: "当前用户权限不足",
+
+	ERROR_WRONG_CHANGE: "当前无法删除业务元数据类型信息",
 }
 
 func GetErrMsg(code int) string {
