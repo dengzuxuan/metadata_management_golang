@@ -96,6 +96,11 @@ func GetUserAvatar(id int) string {
 	db.Select("avatar").Where("id = ?", id).First(&user)
 	return user.Avatar
 }
+func GetUserName(id int) string {
+	var user User
+	db.Where("id = ?", id).First(&user)
+	return user.Username
+}
 func GetUserInfo(id int) (username string, avatar string) {
 	var user User
 	db.Where("id = ?", id).First(&user)

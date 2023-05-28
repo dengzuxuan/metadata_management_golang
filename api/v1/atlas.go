@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"others-part/model"
 	"others-part/utils"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -14,7 +15,8 @@ import (
 func SearchPre(c *gin.Context) {
 
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 	query := c.Query("query")
 	queryParams := make(map[string]string)
 	queryParams["query"] = query
@@ -38,7 +40,8 @@ func SearchResult(c *gin.Context) {
 	useridInt, _ := strconv.Atoi(userid)
 
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 
 	entity := make(map[string]interface{})
 	entityJson, _ := utils.Call("atlas/v2/entity/guid/"+guid, username, password, "GET", nil, nil)
@@ -99,7 +102,8 @@ func TypeEntity(c *gin.Context) {
 	}
 	typeEntitys := []TypeEntitys{}
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 	entritySting, _ := utils.Call("atlas/admin/metrics", username, password, "GET", nil, nil)
 	entityMap := make(map[string]interface{})
 	json.Unmarshal(entritySting, &entityMap)
@@ -138,7 +142,8 @@ func TypeClassification(c *gin.Context) {
 	}
 	classificationEntitys := []ClassificationEntitys{}
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 	query := map[string]string{
 		"type": "classification",
 	}
@@ -186,7 +191,8 @@ func TypeGlossary2(c *gin.Context) {
 	}
 	glossaryEntitys := []GlossaryEntitys{}
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 	glossarySting, _ := utils.Call("atlas/v2/glossary", username, password, "GET", nil, nil)
 
 	glossaryType := model.AtlasGlossary{}
@@ -218,7 +224,8 @@ func TypeGlossary2(c *gin.Context) {
 }
 func TypeGlossary(c *gin.Context) {
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 	glossarySting, _ := utils.Call("atlas/v2/glossary", username, password, "GET", nil, nil)
 	glossaryType := make(map[string]interface{})
 	glossaryTypes := []map[string]interface{}{}
@@ -243,7 +250,8 @@ func TypeBussinessMetadataGlossary(c *gin.Context) {
 	}
 	bussinessMetaEntitys := []BussinessMetaEntitys{}
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 	query := map[string]string{
 		"type": "business_metadata",
 	}
@@ -283,7 +291,8 @@ func FindTypeDetails(c *gin.Context) {
 	pageLimit := c.Query("pageLimit")
 	pageOffset := c.Query("pageOffset")
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 	body := map[string]interface{}{
 		"excludeDeletedEntities":          true,
 		"includeSubClassifications":       true,
@@ -380,7 +389,6 @@ func UpdateTitleInfo(c *gin.Context) {
 	useridInt, _ := strconv.Atoi(userid)
 	typeInfo := c.Query("type")
 	updateInfo := c.Query("content")
-	fmt.Println(updateInfo)
 	//username := c.GetHeader("username")
 	switch typeInfo {
 	case "entity":
@@ -390,7 +398,7 @@ func UpdateTitleInfo(c *gin.Context) {
 		json.Unmarshal([]byte(updateInfo), &classificationUpdate)
 		classificationOri := model.GetClassificatioInfo(classificationUpdate.Classificationname)
 		if classificationOri.Description != classificationUpdate.Description {
-			model.AddTypeRecord(useridInt, "Update Classification Description", updateInfo)
+			model.AddTypeRecord(useridInt, "Update Classification Description", updateInfo, classificationOri.Classificationname)
 			model.UpdateClassification(classificationOri.Classificationname, classificationUpdate.Description, useridInt)
 		}
 	case "business":
@@ -398,7 +406,7 @@ func UpdateTitleInfo(c *gin.Context) {
 		json.Unmarshal([]byte(updateInfo), &businessUpdate)
 		businessOri := model.GetBusinessInfo(businessUpdate.Businessname)
 		if businessUpdate.Description != businessOri.Description {
-			model.AddTypeRecord(useridInt, "Update Business Metadata Description", updateInfo)
+			model.AddTypeRecord(useridInt, "Update Business Metadata Description", updateInfo, businessOri.Businessname)
 			model.UpdateBusinessInfo(businessOri.Businessname, businessUpdate.Description, useridInt)
 		}
 	case "glossary":
@@ -406,7 +414,7 @@ func UpdateTitleInfo(c *gin.Context) {
 		json.Unmarshal([]byte(updateInfo), &glossaryUpdate)
 		glossaryOri := model.GetGlossaryInfo(glossaryUpdate.Glossaryname)
 		if glossaryOri.Shortdescription != glossaryUpdate.Shortdescription || glossaryOri.Longdescription != glossaryUpdate.Longdescription {
-			model.AddTypeRecord(useridInt, "Update Glossary Description", updateInfo)
+			model.AddTypeRecord(useridInt, "Update Glossary Description", updateInfo, glossaryOri.Glossaryname)
 			model.UpdateGlossary(glossaryOri.Glossaryname, glossaryUpdate.Longdescription, glossaryUpdate.Shortdescription, useridInt)
 		}
 	case "term":
@@ -414,7 +422,7 @@ func UpdateTitleInfo(c *gin.Context) {
 		json.Unmarshal([]byte(updateInfo), &termUpdate)
 		termOri := model.GetTermInfo(termUpdate.Termname, termUpdate.Glossaryname)
 		if termOri.Shortdescription != termUpdate.Shortdescription || termOri.Longdescription != termUpdate.Longdescription {
-			model.AddTypeRecord(useridInt, "Update Term Description", updateInfo)
+			model.AddTypeRecord(useridInt, "Update Term Description", updateInfo, termOri.Termname+"@"+termOri.Glossaryname)
 			model.UpdateTerm(termOri.Glossaryname, termOri.Termname, termUpdate.Longdescription, termUpdate.Shortdescription, useridInt)
 		}
 	}
@@ -427,7 +435,8 @@ func UpdateTitleInfo(c *gin.Context) {
 
 func AddInfos(c *gin.Context) {
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 	userid := c.GetHeader("user_id")
 	useridInt, _ := strconv.Atoi(userid)
 	typeInfo := c.Query("type")
@@ -459,9 +468,9 @@ func AddInfos(c *gin.Context) {
 		if strings.Contains(termRespAtlas.QualifiedName, "@") {
 			glossaryName = strings.Split(termRespAtlas.QualifiedName, "@")[1]
 		}
-		model.AddTerm(termRespAtlas.Name, glossaryName, termRespAtlas.ShortDescription, termRespAtlas.LongDescription, useridInt, termRespAtlas.GUID, guid)
+		model.AddTerm(termRespAtlas.Name, glossaryName, termRespAtlas.ShortDescription, termRespAtlas.LongDescription, useridInt, termRespAtlas.Anchor.RelationGUID, termRespAtlas.GUID, guid)
 
-		model.AddTypeRecord(useridInt, "Add Term", content)
+		model.AddTypeRecord(useridInt, "Add Term", content, termRespAtlas.QualifiedName)
 		addTermResp := make(map[string]interface{})
 		addTermResp["status"] = utils.SUCCESS
 		addTermResp["message"] = utils.GetErrMsg(utils.SUCCESS)
@@ -489,7 +498,7 @@ func AddInfos(c *gin.Context) {
 			model.AddClassificationAttribute(typeName, attribute.Name, useridInt, attribute.Description, classificationRespAtlas.ClassificationDefs[0].GUID)
 		}
 
-		model.AddTypeRecord(useridInt, "Add Classification Attribute", content)
+		model.AddTypeRecord(useridInt, "Add Classification Attribute", content, classificationRespAtlas.ClassificationDefs[0].Name)
 
 	case "business":
 		attributeInfoReq := model.BusinessAttributeAdd{}
@@ -512,7 +521,7 @@ func AddInfos(c *gin.Context) {
 			}
 		}
 
-		model.AddTypeRecord(useridInt, "Add Business Metadata Attribute", content)
+		model.AddTypeRecord(useridInt, "Add Business Metadata Attribute", content, businessRespAtlas.BusinessMetadataDefs[0].Name)
 	}
 
 	c.JSON(http.StatusOK, map[string]interface{}{
@@ -523,7 +532,8 @@ func AddInfos(c *gin.Context) {
 
 func UpdateAttrInfo(c *gin.Context) {
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 	userid := c.GetHeader("user_id")
 	useridInt, _ := strconv.Atoi(userid)
 	typeInfo := c.Query("type")
@@ -536,7 +546,7 @@ func UpdateAttrInfo(c *gin.Context) {
 		ori := model.GetAttributeInfo(attribute.Classificationname, attribute.Attributename)
 		if ori.Description != attribute.Description {
 			model.UpdateAttribute(ori.Classificationname, attribute.Attributename, attribute.Description, useridInt)
-			model.AddTypeRecord(useridInt, "Update Attribute Info Description", content)
+			model.AddTypeRecord(useridInt, "Update Attribute Info Description", content, ori.Classificationname)
 		}
 	case "business":
 		attribute := model.BusinessAttributeUpdate{}
@@ -577,7 +587,7 @@ func UpdateAttrInfo(c *gin.Context) {
 				return
 			} else {
 				model.UpdateBusinessAttributeInfo(typeName, attribute.Attributename, useridInt, attribute.Weight, attribute.Description)
-				model.AddTypeRecord(useridInt, "Update Business Metadata Attribute Description", content)
+				model.AddTypeRecord(useridInt, "Update Business Metadata Attribute Description", content, oriAttribute.Businessname)
 				c.JSON(http.StatusOK, map[string]interface{}{
 					"status":  utils.SUCCESS,
 					"message": utils.GetErrMsg(utils.SUCCESS),
@@ -610,10 +620,10 @@ func UpdateAttrInfo(c *gin.Context) {
 			model.UpdateBusinessAttributeTypes(typeName, attributeInfo.Name, attributeInfo.Types, useridInt, businessRespAtlas.BusinessMetadataDefs[0].GUID)
 		}
 		if attribute.Weight != oriAttribute.Weight {
-			model.AddTypeRecord(useridInt, "Update Business Metadata Attribute Weight", content)
+			model.AddTypeRecord(useridInt, "Update Business Metadata Attribute Weight", content, oriAttribute.Businessname)
 		}
 		if len(attribute.Types) != len(oriAttribute.Types) {
-			model.AddTypeRecord(useridInt, "Update Business Metadata Attribute Types", content)
+			model.AddTypeRecord(useridInt, "Update Business Metadata Attribute Types", content, oriAttribute.Businessname)
 		}
 
 	}
@@ -621,4 +631,107 @@ func UpdateAttrInfo(c *gin.Context) {
 		"status":  utils.SUCCESS,
 		"message": utils.GetErrMsg(utils.SUCCESS),
 	})
+}
+
+func DeleteAttr(c *gin.Context) {
+	username := c.GetHeader("username")
+	password1, _ := c.Get("password")
+	password := password1.(string)
+	userid := c.GetHeader("user_id")
+	useridInt, _ := strconv.Atoi(userid)
+	typeInfo := c.Query("type")
+	typeName := c.Query("typename")
+	guid := c.Query("guid")
+	relateid := c.Query("relateid")
+	//qualifiedName := c.Query("typeName")
+	delAtlasResp := make(map[string]interface{})
+	switch typeInfo {
+	case "term":
+		if strings.Contains(typeName, "@") {
+			delGlossaryTerm := []model.DelGlossaryTerm{}
+			termName, glossaryName := strings.Split(typeName, "@")[0], strings.Split(typeName, "@")[1]
+			termInfo := model.GetTermInfo(termName, glossaryName)
+			delGlossaryTerm = append(delGlossaryTerm, model.DelGlossaryTerm{
+				GUID:             guid,
+				RelationshipGUID: relateid,
+			})
+
+			delAtlasTerm, _ := utils.Call("atlas/v2/glossary/terms/"+termInfo.Guid+"/assignedEntities", username, password, "PUT", nil, delGlossaryTerm)
+			_ = json.Unmarshal(delAtlasTerm, &delAtlasResp)
+		}
+
+	case "classification":
+		//http://hadoop102:21000/api/atlas/v2/entity/guid/652e068a-946c-494d-bda8-364f56e38396/classification/%E6%B5%8B%E8%AF%95%E7%B1%BB%E5%9E%8B
+		delAtlasClassification, _ := utils.Call("atlas/v2/entity/guid/"+guid+"/classification/"+typeName, username, password, "DELETE", nil, nil)
+		_ = json.Unmarshal(delAtlasClassification, &delAtlasResp)
+	case "glossary":
+		//http://hadoop102:21000/api/atlas/v2/glossary/terms/94d5a2fc-7eb8-480f-87ef-6b50788dd63e/assignedEntities
+		glossaryId := model.GetTermGlossaryName(guid, relateid)
+		delGlossaryTerm := []model.DelGlossaryTerm{}
+		delGlossaryTerm = append(delGlossaryTerm, model.DelGlossaryTerm{
+			GUID:             glossaryId,
+			RelationshipGUID: relateid,
+		})
+		delAtlasGlossary, _ := utils.Call("atlas/v2/glossary/term/"+guid, username, password, "DELETE", nil, nil)
+		_ = json.Unmarshal(delAtlasGlossary, &delAtlasResp)
+		if delAtlasResp["errorMessage"] != "" {
+			msg := delAtlasResp["errorMessage"]
+
+			re := regexp.MustCompile(`\{(\d+)\}`)
+			match := re.FindStringSubmatch(msg.(string))
+
+			if len(match) > 1 {
+				number := match[1]
+				delAtlasResp["number"] = number
+			}
+		} else {
+			//mysql删除
+			model.DelTerm(guid, relateid)
+			model.AddTypeRecord(useridInt, "Delete All Term", "", typeName)
+		}
+	}
+	typeDelMap := make(map[string]interface{})
+	typeDelMap["info"] = delAtlasResp
+	typeDelMap["status"] = utils.SUCCESS
+	typeDelMap["message"] = utils.GetErrMsg(utils.SUCCESS)
+	c.JSON(http.StatusOK, typeDelMap)
+}
+
+func DeleteType(c *gin.Context) {
+	username := c.GetHeader("username")
+	password1, _ := c.Get("password")
+	password := password1.(string)
+	userid := c.GetHeader("user_id")
+	useridInt, _ := strconv.Atoi(userid)
+	typename := c.Query("typename")
+	typeInfo := c.Query("type")
+	switch typeInfo {
+	case "classification":
+		classificationInfo := model.GetClassificatioInfo(typename)
+		if classificationInfo.Userid != useridInt && model.GetUserRole(useridInt) == 3 {
+			c.JSON(
+				http.StatusOK, map[string]interface{}{
+					"status":  utils.ERROR_USER_AUTH_NOT_ENOUGH,
+					"message": utils.GetErrMsg(utils.ERROR_USER_AUTH_NOT_ENOUGH),
+				})
+		} else {
+			//http://hadoop102:21000/api/atlas/v2/types/typedef/name/分类4
+			_, err := utils.Call("atlas/v2/types/typedef/name/"+typename, username, password, "DELETE", nil, nil)
+			if err != nil {
+				c.JSON(
+					http.StatusOK, map[string]interface{}{
+						"status":  utils.ERROR,
+						"message": utils.GetErrMsg(utils.ERROR),
+					})
+			} else {
+				c.JSON(
+					http.StatusOK, map[string]interface{}{
+						"status":  utils.SUCCESS,
+						"message": utils.GetErrMsg(utils.SUCCESS),
+					})
+				model.AddTypeRecord(useridInt, "Remove Type", "Remove classification name:"+typename, classificationInfo.Classificationname)
+			}
+		}
+	}
+
 }

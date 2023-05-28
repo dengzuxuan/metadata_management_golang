@@ -20,7 +20,8 @@ func AddUserLabel(c *gin.Context) {
 		fmt.Println(err.Error())
 	}
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 	//http://hadoop102:21000/api/atlas/v2/entity
 	userLabelAddRespString, _ := utils.Call("atlas/v2/entity", username, password, "POST", nil, userLabelReq)
 	userLabelAddResp := make(map[string]interface{})

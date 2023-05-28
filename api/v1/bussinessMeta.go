@@ -12,9 +12,10 @@ import (
 
 func CreateBusinessInfo(c *gin.Context) {
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
-	//userid := c.GetHeader("user_id")
-	//useridInt, _ := strconv.Atoi(userid)
+	password1, _ := c.Get("password")
+	password := password1.(string)
+	userid := c.GetHeader("user_id")
+	useridInt, _ := strconv.Atoi(userid)
 	//avatar := model.GetUserAvatar(useridInt)
 	var businessReq model.AtlasBusinessMeta
 	_ = c.ShouldBindJSON(&businessReq)
@@ -39,8 +40,11 @@ func CreateBusinessInfo(c *gin.Context) {
 					model.AddBusinessAttributeTypeInfo(typeName, business.Name, attribute.Name, business.CreatedBy, businessRespAtlas.BusinessMetadataDefs[0].GUID)
 				}
 			}
+			businessJson, _ := json.Marshal(business)
+			model.AddTypeRecord(useridInt, "Business Meatedata Create", string(businessJson), business.Name)
 		}
 	}
+
 	addAtlasBusinessResp["status"] = utils.SUCCESS
 	addAtlasBusinessResp["message"] = utils.GetErrMsg(utils.SUCCESS)
 	c.JSON(http.StatusOK, addAtlasBusinessResp)
@@ -59,7 +63,8 @@ func EntityAddBusiness(c *gin.Context) {
 		fmt.Println(err.Error())
 	}
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 	classificationSting, _ := utils.Call("atlas/v2/entity/guid/classification", username, password, "POST", nil, businessReq)
 	classificationType := make(map[string]interface{})
 	_ = json.Unmarshal(classificationSting, &classificationType)
@@ -164,8 +169,13 @@ func AddBusinessInfo(c *gin.Context) {
 		}
 		addBm[add.AttributeName.BusinessName][add.AttributeName.AttributeName] = add.AttributeValue
 	}
-	//mysql 更新 删除
 	oriEntityInfo := model.GetEntityBusinessInfos(guid)
+	if len(oriBmReq) == 0 {
+		for _, info := range oriEntityInfo {
+			addBm[info.BusinessName] = map[string]string{}
+		}
+	}
+	//mysql 更新 删除
 	for _, oriInfo := range oriEntityInfo {
 		if _, ok := addBm[oriInfo.BusinessName]; !ok {
 			//删除该guid下的business
@@ -192,7 +202,8 @@ func AddBusinessInfo(c *gin.Context) {
 
 	//atlas更新
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 	//http://hadoop102:21000/api/atlas/v2/entity/guid/0efaaec3-cf2a-44a8-a9cc-c7e5c67a4125/businessmetadata?isOverwrite=true
 	addBusinessSting, _ := utils.Call("atlas/v2/entity/guid/"+guid+"/businessmetadata", username, password, "POST", map[string]string{"isOverwrite": "true"}, addBm)
 	addBusinessResp := make(map[string]interface{})

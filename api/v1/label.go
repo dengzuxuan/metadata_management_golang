@@ -13,7 +13,8 @@ func Addlabel(c *gin.Context) {
 	//  "111"
 	//]
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 	guid := c.Query("guid")
 	label := c.Query("label")
 	labels := []string{}

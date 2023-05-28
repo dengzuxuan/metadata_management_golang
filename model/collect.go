@@ -55,6 +55,16 @@ func (this *UserCollectRecord) TableName() string {
 	return "UserCollectRecord"
 }
 
+type UserCollectRecordInfos struct {
+	Id         int    `gorm:"id" json:"id"`
+	Userid     int    `gorm:"userid" json:"userid"`
+	Content    string `json:"content"`
+	Collectid  int    `gorm:"collectid" json:"collectid"`
+	Touserid   int    `gorm:"touserid" json:"touserid"`
+	TypeInfo   string `json:"type_info"`
+	Createtime string `gorm:"createtime" json:"createtime"`
+}
+
 func AddCollect(userid, touserid int, guid, name, typename, findname, desc, typeinfo string) {
 	newCollectInfo := UserCollectInfo{
 		Userid:      userid,
@@ -101,21 +111,59 @@ func GetCollect(userid int) []UserCollectInfo {
 	return userCollectInfos
 }
 
+func GetCollectRecord(userid int) []UserCollectRecordInfos {
+	userCollectRecordInfos := []UserCollectRecordInfos{}
+	userCollectInfos := []UserCollectRecord{}
+	_ = db.Where("touserid=?", userid).Find(&userCollectInfos)
+	for _, info := range userCollectInfos {
+		collectInfo := UserCollectInfo{}
+		_ = db.Where("id=?", info.Collectid).First(&collectInfo)
+		userCollectRecordInfos = append(userCollectRecordInfos, UserCollectRecordInfos{
+			Id:         info.Id,
+			Userid:     info.Userid,
+			Content:    collectInfo.Collectname,
+			TypeInfo:   getTypeName(collectInfo.Findname),
+			Createtime: info.Createtime,
+		})
+	}
+	return userCollectRecordInfos
+}
+
+func getTypeName(name string) string {
+	switch name {
+	case "glossary":
+		return "术语表"
+	case "term":
+		return "术语"
+	case "business":
+		return "业务元数据"
+	case "classification":
+		return "分类类型"
+	}
+	return "实体"
+}
+
 func DeleteCollect(id int) {
-	info := UserCollectInfo{}
-	db.Where("id=?", id).Delete(&info)
+	info1 := UserCollectInfo{}
+	info2 := UserCollectInfo{}
+	db.Where("id=?", id).Find(&info1)
+	db.Where("id=?", id).Delete(&info2)
 	record := UserCollectRecord{}
-	db.Where("collectid=?", id).Delete(&record)
+	db.Where("collectid=?", info1.Id).Delete(&record)
 }
 func DeleteEntityCollect(userid int, guid string) {
-	info := UserCollectInfo{}
-	db.Where("userid=?", userid).Where("collectguid", guid).Delete(&info)
+	info1 := UserCollectInfo{}
+	info2 := UserCollectInfo{}
+	db.Where("userid=?", userid).Where("collectguid", guid).Find(&info1)
+	db.Where("userid=?", userid).Where("collectguid", guid).Delete(&info2)
 	record := UserCollectRecord{}
-	db.Where("collectid=?", info.Id).Delete(&record)
+	db.Where("collectid=?", info1.Id).Delete(&record)
 }
 func DeleteTypeCollect(userid int, typename string, findname string) {
-	info := UserCollectInfo{}
-	db.Where("userid=?", userid).Where("typename=?", typename).Where("findname=?", findname).Delete(&info)
+	info1 := UserCollectInfo{}
+	info2 := UserCollectInfo{}
+	db.Where("userid=?", userid).Where("typename=?", typename).Where("findname=?", findname).Find(&info1)
+	db.Where("userid=?", userid).Where("typename=?", typename).Where("findname=?", findname).Delete(&info2)
 	record := UserCollectRecord{}
-	db.Where("collectid=?", info.Id).Delete(&record)
+	db.Where("collectid=?", info1.Id).Delete(&record)
 }

@@ -61,3 +61,28 @@ func ChangeShowType(timeOri string) string {
 	layout2 := "2006/1/2 15:04"
 	return time.Unix(times.Unix(), 0).In(location).Format(layout2)
 }
+
+func ShowDate(timeOri string) string {
+	timeLayout := "2006-01-02 15:04:05"
+	location, _ := time.LoadLocation("Asia/Shanghai")
+	times, _ := time.ParseInLocation(timeLayout, timeOri, location)
+	layout2 := "2006-1-2"
+	return time.Unix(times.Unix(), 0).In(location).Format(layout2)
+}
+func ShowDate2(timeOri string) string {
+	timeLayout := "2006-01-02 15:04:05"
+	location, _ := time.LoadLocation("Asia/Shanghai")
+	times, _ := time.ParseInLocation(timeLayout, timeOri, location)
+	layout2 := "15:04"
+	return time.Unix(times.Unix(), 0).In(location).Format(layout2)
+}
+func ShowDate_1(timeOri int64) string {
+	location, _ := time.LoadLocation("Asia/Shanghai")
+	layout2 := "2006-1-2"
+	return time.Unix(timeOri, 0).In(location).Format(layout2)
+}
+func ShowDate2_1(timeOri int64) string {
+	location, _ := time.LoadLocation("Asia/Shanghai")
+	layout2 := "15:04"
+	return time.Unix(timeOri, 0).In(location).Format(layout2)
+}

@@ -13,7 +13,8 @@ import (
 
 func AddClassificationInfo(c *gin.Context) {
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 	userid := c.GetHeader("user_id")
 	useridInt, _ := strconv.Atoi(userid)
 	//avatar := model.GetUserAvatar(useridInt)
@@ -36,6 +37,8 @@ func AddClassificationInfo(c *gin.Context) {
 			}
 		}
 	}
+	classificationReqJosn, _ := json.Marshal(classificationReq)
+	model.AddTypeRecord(useridInt, "Classification Create", string(classificationReqJosn), classificationReq.ClassificationDefs[0].Name)
 	addAtlasClassificationResp["status"] = utils.SUCCESS
 	addAtlasClassificationResp["message"] = utils.GetErrMsg(utils.SUCCESS)
 	c.JSON(http.StatusOK, addAtlasClassificationResp)
@@ -43,7 +46,8 @@ func AddClassificationInfo(c *gin.Context) {
 
 func UpdateClassificatioInfo(c *gin.Context) {
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 	userid := c.GetHeader("user_id")
 	useridInt, _ := strconv.Atoi(userid)
 	name := c.Query("name")
@@ -93,57 +97,19 @@ func UpdateClassificatioInfo(c *gin.Context) {
 	//mysql
 	if oriClassification.Description != desc {
 		model.UpdateClassification(oriClassification.Classificationname, desc, useridInt)
-		model.AddTypeRecord(useridInt, "Update Classification Description", oriClassification.Description+"->"+desc)
+		model.AddTypeRecord(useridInt, "Update Classification Description", oriClassification.Description+"->"+desc, oriClassification.Classificationname)
 	}
 	for _, attribute := range updateAttribute {
 		attributeName := attribute.Name
 		attributeDesc := attribute.Description
 		action := model.CheckClassificationAttribute(attributeName, name, useridInt, attributeDesc, oriClassification.Guid)
 		if action != "none" {
-			model.AddTypeRecord(useridInt, action, attributeInfoJson)
+			model.AddTypeRecord(useridInt, action, attributeInfoJson, oriClassification.Classificationname)
 		}
 	}
 	updateClassification["status"] = utils.SUCCESS
 	updateClassification["message"] = utils.GetErrMsg(utils.SUCCESS)
 	c.JSON(http.StatusOK, updateClassification)
-}
-
-func DeleteClassification(c *gin.Context) {
-	username := c.GetHeader("username")
-	password := c.GetHeader("password")
-	userid := c.GetHeader("user_id")
-	useridInt, _ := strconv.Atoi(userid)
-	typename := c.Query("typename")
-	typeInfo := c.Query("type")
-	switch typeInfo {
-	case "classification":
-		classificationInfo := model.GetClassificatioInfo(typename)
-		if classificationInfo.Userid != useridInt && model.GetUserRole(useridInt) == 3 {
-			c.JSON(
-				http.StatusOK, map[string]interface{}{
-					"status":  utils.ERROR_USER_AUTH_NOT_ENOUGH,
-					"message": utils.GetErrMsg(utils.ERROR_USER_AUTH_NOT_ENOUGH),
-				})
-		} else {
-			//http://hadoop102:21000/api/atlas/v2/types/typedef/name/分类4
-			_, err := utils.Call("atlas/v2/types/typedef/name/"+typename, username, password, "DELETE", nil, nil)
-			if err != nil {
-				c.JSON(
-					http.StatusOK, map[string]interface{}{
-						"status":  utils.ERROR,
-						"message": utils.GetErrMsg(utils.ERROR),
-					})
-			} else {
-				c.JSON(
-					http.StatusOK, map[string]interface{}{
-						"status":  utils.SUCCESS,
-						"message": utils.GetErrMsg(utils.SUCCESS),
-					})
-				model.AddTypeRecord(useridInt, "Remove Type", "Remove classification name:"+typename)
-			}
-		}
-	}
-
 }
 
 func GetClassificationInfo(c *gin.Context) {
@@ -188,7 +154,8 @@ func EntityAddClassification(c *gin.Context) {
 		fmt.Println(err.Error())
 	}
 	username := c.GetHeader("username")
-	password := c.GetHeader("password")
+	password1, _ := c.Get("password")
+	password := password1.(string)
 	classificationSting, _ := utils.Call("atlas/v2/entity/bulk/classification", username, password, "POST", nil, classificationReq)
 	classificationType := make(map[string]interface{})
 	_ = json.Unmarshal(classificationSting, &classificationType)

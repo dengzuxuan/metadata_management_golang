@@ -36,10 +36,11 @@ func CheckFollow(userid, touserid int) bool {
 }
 
 type UserInfoBrief struct {
-	Userid   int    `json:"userid"`
-	Username string ` json:"username"`
-	RoleInfo string `json:"role_info"`
-	Avatar   string `json:"avatar"`
+	Userid     int    `json:"userid"`
+	Username   string ` json:"username"`
+	RoleInfo   string `json:"role_info"`
+	Avatar     string `json:"avatar"`
+	Createtime string `json:"createtime"`
 }
 
 func GetAllFollowInfos(userid int) ([]UserInfoBrief, []UserInfoBrief) {
@@ -76,11 +77,12 @@ func GetAllFollowMy(userid int) []UserInfoBrief {
 	userfollowedInfo := []UserInfoBrief{}
 	_ = db.Where("touserid=?", userid).Find(&userfollowed)
 	for _, record := range userfollowed {
-		userInfo := GetUserInfos(record.Id)
+		userInfo := GetUserInfos(record.Userid)
 		userfollowedInfo = append(userfollowedInfo, UserInfoBrief{
-			Username: userInfo.Username,
-			RoleInfo: userInfo.RoleInfo,
-			Avatar:   userInfo.Avatar,
+			Username:   userInfo.Username,
+			RoleInfo:   userInfo.RoleInfo,
+			Avatar:     userInfo.Avatar,
+			Createtime: record.Createtime,
 		})
 	}
 	return userfollowedInfo

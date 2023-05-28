@@ -8,10 +8,11 @@ import (
 
 func InitRouter() *gin.Engine {
 	r := gin.Default()
-	r.Use(middleware.Cors())
+
+	r.Use(middleware.Cors(), middleware.Check())
 	user := r.Group("api/v1/user")
 	{
-
+		user.GET("/forget", v1.ForgetPassword)
 		user.POST("/login", v1.LoginUser)
 		user.GET("/info", v1.GetUser)
 		user.GET("/userinfo", v1.GetSingleUser)
@@ -21,6 +22,8 @@ func InitRouter() *gin.Engine {
 		user.POST("/deletecollect", v1.DeleteCollect)
 		user.POST("/uploadavatar", v1.UploadAvatar)
 		user.POST("/updateinfo", v1.UpdateUserInfo)
+		user.GET("/message", v1.GetUserMessage)
+		user.GET("/dynamic", v1.GetUserDynamic)
 	}
 	atlas := r.Group("/api/v1/atlas")
 	{
@@ -37,6 +40,8 @@ func InitRouter() *gin.Engine {
 		atlas.POST("/types/updatetitleinfo", v1.UpdateTitleInfo)
 		atlas.POST("/types/addinfo", v1.AddInfos)
 		atlas.POST("/types/updateattribute", v1.UpdateAttrInfo)
+		atlas.POST("/types/delitemtypes", v1.DeleteAttr)
+		atlas.POST("/types/deltypes", v1.DeleteType)
 		classification := atlas.Group("/classification")
 		{
 
@@ -46,16 +51,18 @@ func InitRouter() *gin.Engine {
 			classification.GET("/classificationname", v1.GetClassificationName)
 			classification.POST("/addclassification", v1.EntityAddClassification)
 			classification.POST("/updateclassification", v1.UpdateClassificatioInfo)
-			classification.POST("/deleteclassification", v1.DeleteClassification)
 		}
 		glossary := atlas.Group("/glossary")
 		{
-
+			glossary.GET("/allglossary", v1.GetAllGlossaryInfos)
+			glossary.GET("/getTermInfo", v1.GetGlossaryName)
+			glossary.GET("/allterms", v1.GetAllTermInfos)
 			glossary.POST("/createglossary", v1.AddGlossaryInfo)
 			glossary.POST("/createterm", v1.AddTermInfo)
 			glossary.GET("/glossaryinfos", v1.GetGlossaryInfo)
 			glossary.GET("/termname", v1.GetTermTotalName)
 			glossary.GET("/totalname", v1.GetTermTotalName2)
+			glossary.POST("/addterm", v1.AddEntityTermInfo)
 		}
 		label := atlas.Group("/label")
 		{
@@ -79,6 +86,9 @@ func InitRouter() *gin.Engine {
 	{
 		comment.GET("/allcoments", v1.GetAllComments)
 		comment.POST("/addcomment", v1.AddComment)
+		comment.POST("/delcomment", v1.DelComment)
+		comment.POST("/addlike", v1.AddCommentLike)
+		comment.POST("/dellike", v1.DelCommentLike)
 	}
 	collect := r.Group("/api/v1/collect")
 	{

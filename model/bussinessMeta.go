@@ -580,12 +580,12 @@ func GetEntityBusinessInfos(guid string) []guidBusinessInfo {
 
 func DeleteEntityBusinessInfo(guid, businessname string) {
 	businessEntityInfo := BusinessMetaEntityInfo{}
-	db.Where("guid= ?", guid).Where("businessname=?", businessname).Delete(&businessEntityInfo)
+	db.Where("entityguid= ?", guid).Where("businessname=?", businessname).Delete(&businessEntityInfo)
 }
 
 func DeleteEntityAttributeInfo(guid, businessname, attributename string) {
 	businessEntityInfo := BusinessMetaEntityInfo{}
-	db.Where("guid= ?", guid).Where("businessname=?", businessname).Where("attributename=?", attributename).Delete(&businessEntityInfo)
+	db.Where("entityguid= ?", guid).Where("businessname=?", businessname).Where("attributename=?", attributename).Delete(&businessEntityInfo)
 }
 
 func UpdateEntityAttributeInfo(userid int, guid, businessname, attributename, attributevalue string) {

@@ -26,6 +26,9 @@ type TermReqAtlas struct {
 		DisplayText  string `json:"displayText"`
 	} `json:"anchor"`
 }
+type TermAtlasAdd struct {
+	GUID string `json:"guid"`
+}
 type TermRespAtlas struct {
 	GUID             string `json:"guid"`
 	QualifiedName    string `json:"qualifiedName"`
@@ -52,7 +55,10 @@ type AddTermInfo struct {
 		DisplayText  string `json:"displayText"`
 	} `json:"anchor"`
 }
-
+type DelGlossaryTerm struct {
+	GUID             string `json:"guid"`
+	RelationshipGUID string `json:"relationshipGuid"`
+}
 type GlossaryInfo struct {
 	Id               int    `gorm:"id" json:"id"`
 	Glossaryname     string `gorm:"glossaryname" json:"glossaryname"`
@@ -84,6 +90,7 @@ type GlossaryTermsInfo struct {
 	Longdescription  string `gorm:"longdescription" json:"longdescription"`
 	Guid             string `gorm:"guid" json:"guid"`
 	Glossaryguid     string `gorm:"glossaryguid" json:"glossaryguid"`
+	Relationshipguid string `gorm:"relationshipguid" json:"relationshipguid"`
 	Glossaryname     string `gorm:"glossaryname" json:"glossaryname"`
 
 	Updatetime   string `gorm:"updatetime" json:"updatetime"`
@@ -112,6 +119,45 @@ func (this *GlossaryTermsInfo) TableName() string {
 }
 func (this *GlossaryTermClassificationAttributeInfo) TableName() string {
 	return "GlossaryTermClassificationAttributeInfo"
+}
+
+type AllGlossaryInfoType struct {
+	Name             string `json:"name"`
+	Shortdescription string `gorm:"shortdescription" json:"shortdescription"`
+	Longdescription  string `gorm:"longdescription" json:"longdescription"`
+
+	TermInfo []GlossaryTermsInfo `json:"term_info"`
+}
+
+func GetAllGlossaryInfos() []AllGlossaryInfoType {
+	infos := []AllGlossaryInfoType{}
+	glossaryInfo := []GlossaryInfo{}
+	_ = db.Find(&glossaryInfo)
+	for _, info := range glossaryInfo {
+		termInfos := []GlossaryTermsInfo{}
+		_ = db.Where("glossaryname=?", info.Glossaryname).Find(&termInfos)
+		infos = append(infos, AllGlossaryInfoType{
+			Name:             info.Glossaryname,
+			Shortdescription: info.Shortdescription,
+			Longdescription:  info.Longdescription,
+			TermInfo:         termInfos,
+		})
+	}
+	return infos
+}
+func GetGlossaryName(guid string) string {
+	info := GlossaryTermsInfo{}
+	_ = db.Where("guid=?", guid).Find(&info)
+	return info.Glossaryname
+}
+func GetAllTerms(name string) []GlossaryTermsInfo {
+	termInfos := []GlossaryTermsInfo{}
+	_ = db.Where("glossaryname=?", name).Find(&termInfos)
+	return termInfos
+}
+func DelTerm(termguid string, relationshipid string) {
+	termInfo := GlossaryTermsInfo{}
+	_ = db.Where("guid=?", termguid).Where("relationshipguid=?", relationshipid).Delete(&termInfo)
 }
 func AddGlossary(Glossaryname string, Shortdescription string, Longdescription string, userid int, username string, avatar string, guid string, Termnumber int) int {
 	newGlossary := GlossaryInfo{
@@ -189,6 +235,11 @@ func GetTermInfo(termName string, glossaryName string) GlossaryTermsInfo {
 	termInfo.UpdateAvatar = upavatar
 	return termInfo
 }
+func GetTermGlossaryName(termguid string, relationshipid string) string {
+	termInfo := GlossaryTermsInfo{}
+	_ = db.Where("guid=?", termguid).Where("relationshipguid=?", relationshipid).Find(&termInfo)
+	return termInfo.Glossaryguid
+}
 func GetTerms(guid string) []GlossaryTermsInfo {
 	termInfos := []GlossaryTermsInfo{}
 	terms := []GlossaryTermsInfo{}
@@ -211,7 +262,7 @@ func GetTermClassificationAttributes(guid string, classificationName string) []G
 	_ = db.Where("Classificationname=?", classificationName).Where("Guid=?", guid).Find(&termClassifications)
 	return termClassifications
 }
-func AddTerm(Termname string, Glossaryname string, Shortdescription string, Longdescription string, userid int, guid string, Glossaryguid string) int {
+func AddTerm(Termname string, Glossaryname string, Shortdescription string, Longdescription string, userid int, guid string, relationshipGuid string, Glossaryguid string) int {
 	newTerm := GlossaryTermsInfo{
 		Termname:         Termname,
 		Userid:           userid,
@@ -221,6 +272,7 @@ func AddTerm(Termname string, Glossaryname string, Shortdescription string, Long
 		Guid:             guid,
 		Glossaryname:     Glossaryname,
 		Glossaryguid:     Glossaryguid,
+		Relationshipguid: relationshipGuid,
 	}
 	err = db.Create(&newTerm).Error
 	if err != nil {
